@@ -1,0 +1,69 @@
+import numpy as np
+from scipy import signal
+import matplotlib.pyplot as plt
+from numericalmethods import *
+import rustlets
+import scipy.io.wavfile as wvf
+
+def fwavelength(w_0):
+    return 4 * np.pi / (w_0 + np.sqrt(2 + w_0**2))
+
+
+def icwt(cwtm,scales,times):
+    n_scales = np.shape(cwtm)[0]
+    n_times = np.shape(cwtm)[1]
+
+    diffs = np.empty(np.shape(cwtm),dtype=np.complex128)
+
+    for i in range(n_scales):
+        diffs[i] = approximate_diff(cwtm[i],times)
+
+
+    f_rec = np.empty(n_times)
+
+    for j in range(n_times):
+        integral = trapezoid_int(diffs[:,j],scales)
+        f_rec[j] = integral.imag / np.sqrt(2 * np.pi)
+
+    return f_rec#.imag / np.sqrt(2 * np.pi)
+
+
+def main():
+    hz = 200180
+    FILENAME = "vocals.wav"
+    hz, data = wvf.read(FILENAME)
+
+    signal = data[:0] + data[:1]
+    
+    print(sigal.shape)
+    """
+    ## do the morlet transform
+    cwt_list,scales_list = rustlets.cwt_morlet(samples,hz,8)
+
+    scales = np.array(scales_list)
+    freqs = 1 / (scales * fwavelength(2 * np.pi))
+    cwtmat = np.array(cwt_list,dtype=np.complex64).reshape((len(scales),-1))[:,:len(times)]
+
+    plt.plot(times,samples,label="original")
+    plt.show()
+
+    plt.pcolormesh(times,freqs, np.abs(cwtmat), cmap='viridis', shading='gouraud')
+    plt.show()
+
+
+    f_rec = icwt(cwtmat,scales,times)
+
+    plt.plot(times,samples,label="original")
+    plt.plot(times,f_rec * np.pi,label="recovered")
+    plt.legend()
+    plt.show()
+
+    plt.plot(times,f_rec/samples,label="ratio")
+    plt.legend()
+    plt.show()
+    """
+
+
+if __name__ == "__main__":
+    main()
+    #testAnalytic()
