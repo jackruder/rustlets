@@ -11,7 +11,13 @@ use crate::waveletanalysis::*;
 
 #[pyfunction]
 #[pyo3(name = "cwt_morlet")]
-fn cwt_morlet_py(timeseries: Vec<f64>, hz: f64, steps: u32, normalize: bool) -> (Vec<Complex64>, Vec<f64>) {
+fn cwt_morlet_py(timeseries: Vec<f64>, hz: f64, steps: u32) -> (Vec<Complex64>, Vec<f64>) {
+    cwt(&timeseries, morlet_fourier, hz, steps as f64, false) 
+} 
+
+#[pyfunction]
+#[pyo3(name = "cwt_morlet_ext")]
+fn cwt_morlet_ext_py(timeseries: Vec<f64>, hz: f64, steps: u32, normalize: bool) -> (Vec<Complex64>, Vec<f64>) {
     cwt(&timeseries, morlet_fourier, hz, steps as f64, normalize)
 } 
 
@@ -52,6 +58,7 @@ fn trapz_step_py(f: Vec<Complex64>, x: Vec<f64>, col: usize) -> Complex64 { //Co
 #[pymodule]
 fn rustlets(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(cwt_morlet_py, m)?)?;
+    m.add_function(wrap_pyfunction!(cwt_morlet_ext_py, m)?)?;
     m.add_function(wrap_pyfunction!(icwt_morlet_py, m)?)?;
     m.add_function(wrap_pyfunction!(morlet_wavelength_py, m)?)?;
     m.add_function(wrap_pyfunction!(diff_py, m)?)?;
