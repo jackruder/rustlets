@@ -1,6 +1,7 @@
 use std::f64::consts::PI;
 use num_complex::{Complex64, ComplexFloat};
 use rustfft::{self, FftPlanner};
+use collect_slice::CollectSlice;
 
 use self::calctools::phase_unwrap;
 
@@ -74,22 +75,19 @@ pub fn cwt(timeseries: &Vec<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f
     }
 
     let ifft = planner.plan_fft_inverse(n);
-    let mut scratch: Vec<Complex64> = Vec::with_capacity(ifft.get_outofplace_scratch_len()); // scratch
-                                                                                             // buffer
 
     let mut cwtm = vec![Complex64{ re: 0.0f64, im: 0.0f64 }; scales.len() * n]; //output
-    let mut eval: Vec<Complex64> = Vec::with_capacity(angs.len()); //input buffer for fft
     for i in 0..scales.len() {
+        let target = &mut cwtm[(i * n)..((i+1)*n)]; // slice of output we wish to write
         let norm = f64::sqrt(2.0 * PI * scales[i] * hz).powi(nrm); // 1 if normalize = false
                                                                       // TODO maybe just scales and
                                                                       // not newscales in norm?
-        eval = angs.iter()
-                .zip(&data)
-                .map(|(&w, f)| f *norm* wavelet(scales[i],w,2.0*PI))
-                .collect();
+        angs.iter()
+            .zip(&data)
+            .map(|(&w, f)| f *norm* wavelet(scales[i],w,2.0*PI))
+            .collect_slice(target);
 
-        let target = &mut cwtm[(i * n)..((i+1)*n)]; // slice of output we wish to write
-        ifft.process_outofplace_with_scratch(&mut eval, target, &mut scratch)
+        ifft.process(target)
 
     }
 
