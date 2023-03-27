@@ -15,6 +15,7 @@ num-complex = "~0.4.3"
 rustfft = "~6.1.0"
 pyo3 = { version = "0.18.1", features = ["extension-module", "num-complex"] }
 num-traits = "~0.2"
+numpy="~0.18"
 
 
 

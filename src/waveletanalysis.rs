@@ -2,6 +2,8 @@ use std::f64::consts::PI;
 use num_complex::{Complex64, ComplexFloat};
 use rustfft::{self, FftPlanner};
 
+use self::calctools::phase_unwrap;
+
 pub fn chirp(t_0: f64, t_1: f64, f_0: f64, f_1: f64) -> f64 {
     f64::sin(f_0 + (f_1 - f_0) * t_0 / t_1) 
 }
@@ -65,9 +67,9 @@ pub fn cwt(timeseries: &Vec<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f
     let c: f64 = 2.0 * PI / (n as f64) * hz;
     for i in 0..n {
         if i <= n/2 {
-            angs.push(c * i as f64)
+            angs.push(c * i as f64) // pos to n/2
         } else {
-            angs.push(c * (i as f64 - n as f64))
+            angs.push(c * (i as f64 - n as f64)) // wrap to [-n/2, -1]
         }
     }
 
@@ -116,10 +118,34 @@ pub fn icwt_morlet(cwtm: &Vec<Complex64>, scales: &Vec<f64>,times: &Vec<f64>) ->
 
 }
 
+pub fn vocode_cwt(timeseries: &Vec<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f64, steps: f64, times: &Vec<f64>, rescale: f64) -> Vec<f64>{
+    // slow, I wouldn't use this
+    let (mut cwtm, mut scales) = cwt(timeseries, wavelet, hz, steps, false);
+    let mut phases: Vec<f64> = cwtm.iter()
+                    .map(|c| f64::atan2(c.im, c.re))
+                    .collect();
+    let n = timeseries.len();
+    for j in 0..scales.len() {
+        let i = j * n;
+        phase_unwrap(&mut phases[i..(i+n)]);
 
+    }
 
-pub mod calctools {
+    for i in 0..cwtm.len() {
+        let exp = Complex64{re:0.0f64, im:1.0f64} * phases[i] * rescale;
+        cwtm[i] = cwtm[i].abs() * exp.exp();
+    }
+
+    for s in scales.iter_mut() {
+        *s /= rescale;
+    }
+
+    icwt_morlet(&cwtm, &scales, &times)
+
+}
+mod calctools {
     use num_complex::{Complex64};
+    use std::f64::consts::PI;
 
     fn centraldiff3(f_prev: &Complex64, f_next: &Complex64, x_prev: &f64, x_next: &f64) -> Complex64 {
         (*f_next - *f_prev)/(*x_next - *x_prev)
@@ -174,7 +200,22 @@ pub mod calctools {
         
     }
 
-
+    pub fn phase_unwrap(phases: &mut[f64]) { // T(N^2/2 - N/2), bad
+        let op = phases.to_vec();// old phases
+        let n = phases.len();
+        for i in 1..n {
+            let diff = op[i] - op[i-1];
+            if diff > PI {
+                for p in phases[i..n].iter_mut() {
+                    *p -= 2.0 * PI;
+                }
+            } else if diff < -PI {
+                for p in phases[i..n].iter_mut() {
+                    *p += 2.0 * PI;
+                }
+            }
+        }
+    }
 
 }
 
