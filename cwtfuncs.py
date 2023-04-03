@@ -1,4 +1,3 @@
-
 import numpy as np
 from scipy import fft, signal
 import matplotlib.pyplot as plt
@@ -15,7 +14,7 @@ def main():
     #samples = samples + signal.chirp(times, f0=20000, f1=8000, t1=1, method='linear')
 
 
-    cwt_list,scales_list = rustlets.cwt_morlet(samples,hz,10,False)
+    cwt_list,scales_list = rustlets.cwt_morlet(samples,hz,10)
 
     scales = np.array(scales_list)
     freqs = 1 / (scales * rustlets.morlet_wavelength(2 * np.pi))
@@ -31,7 +30,7 @@ def main():
     f_rec = np.array(rustlets.icwt_morlet(cwt_list,scales,times))
 
     plt.plot(times,samples,label="original")
-    plt.plot(times,f_rec * np.pi,label="recovered")
+    plt.plot(times,f_rec,label="recovered")
     plt.legend()
     plt.show()
 
