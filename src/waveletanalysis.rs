@@ -92,6 +92,7 @@ pub fn cwt(timeseries: &Vec<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f
         let data = Arc::clone(&data);
         let ifft = Arc::clone(&ifft);
         
+        // spawn one thread per scale
         thread::spawn(move || {
             let norm = f64::sqrt(2.0 * PI * scale * hz).powi(nrm); // 1 if normalize = false
             
@@ -109,7 +110,8 @@ pub fn cwt(timeseries: &Vec<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f
             txi.send((i,eval)).unwrap();
         });
     }
-    drop(tx);
+
+    drop(tx); // stop listening
 
     for (i,cwtrow) in rx {
         cwtm[i] = cwtrow;
