@@ -2,8 +2,6 @@ use std::{f64::consts::PI, sync::{mpsc, Arc}, thread};
 use num_complex::{Complex64, ComplexFloat};
 use rustfft::{self, FftPlanner};
 
-use self::calctools::phase_unwrap;
-
 pub fn chirp(t_0: f64, t_1: f64, f_0: f64, f_1: f64) -> f64 {
     f64::sin(f_0 + (f_1 - f_0) * t_0 / t_1) 
 }
@@ -182,7 +180,7 @@ mod calctools {
     
     // compute the integral over the column of a flattened 2d array, with width equal to the length
     // of x
-    pub fn trapz_step(f: &Vec<Complex64>, x: &Vec<f64>, col: usize) -> Complex64 { //Complex64ODO handle mismatch lengths
+    fn trapz_step(f: &Vec<Complex64>, x: &Vec<f64>, col: usize) -> Complex64 { //Complex64ODO handle mismatch lengths
         let mut sum = Complex64{re: 0.0f64, im: 0.0f64}; 
         let m = f.len() / x.len();
         for row in 0..(x.len()-1) {
@@ -206,7 +204,7 @@ mod calctools {
         
     }
 
-    pub fn phase_unwrap(phases: &mut[f64]) { // T(N^2/2 - N/2), bad
+    fn phase_unwrap(phases: &mut[f64]) { // T(N^2/2 - N/2), bad
         let op = phases.to_vec();// old phases
         let n = phases.len();
         for i in 1..n {
