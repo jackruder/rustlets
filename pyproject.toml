@@ -10,3 +10,18 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
+
+[tool.poetry]
+name = "rustlets"
+version = "0.2.0"
+description = "A wavelet library written in Rust, with bindings to python."
+authors = ["Jack Ruder <jackruder14@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/jackruder/rustlets"
+keywords = ["multithreaded", "transform", "wavelet", "continuous"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.dev-dependencies]
+maturin = ">=0.14,<0.15"
