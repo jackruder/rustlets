@@ -14,7 +14,13 @@ For example, with pip, do
 pip install maturin
 
 
-You will also need matplotlib, scipy to run demos
+You will also need matplotlib, scipy, numpy to run demos
 
 
 To build, run maturin develop --release
+
+## usage
+see cwtfuncs.py
+
+## TODO
+Move Array types to ArcArray for cleanliness
