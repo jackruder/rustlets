@@ -1,4 +1,4 @@
-use numpy::{PyReadonlyArray1, PyReadwriteArray2, PyArray1, PyArray2};
+use numpy::{PyArray1, PyArray2, PyArray};
 use pyo3::{prelude::*};
 use num_complex::{Complex64};
 
@@ -20,18 +20,18 @@ use crate::waveletanalysis::*;
 
 #[pyfunction]
 #[pyo3(name = "cwt_morlet")]
-fn cwt_morlet_py<'py>(py: Python<'py>, timeseries: PyReadonlyArray1<f64>, hz: f64, steps: u32) -> (PyArray2<Complex64>, PyArray1<f64>) {
+fn cwt_morlet_py<'py>(py: Python<'py>, timeseries: &PyArray1<f64>, hz: f64, steps: u32) -> (&'py PyArray2<Complex64>, &'py PyArray1<f64>) {
     let timeseries = timeseries.as_array();
     let (cwtm, scales) = cwt(&timeseries, morlet_fourier, hz, steps as f64, false);
-    (cwtm.into_py_array(), scales.into_py_array())
+    (PyArray::from_array(py, &cwtm), PyArray::from_array(py, &scales))
 }
 
 #[pyfunction]
 #[pyo3(name = "cwt_morlet_ext")]
-fn cwt_morlet_ext_py<'py>(py: Python<'py>, timeseries: PyReadonlyArray1<f64>, hz: f64, steps: u32, normalize: bool) -> (PyArray2<Complex64>, PyArray1<f64>) {
+fn cwt_morlet_ext_py<'py>(py: Python<'py>, timeseries: &PyArray1<f64>, hz: f64, steps: u32, normalize: bool) -> (&'py PyArray2<Complex64>, &'py PyArray1<f64>) {
     let timeseries = timeseries.as_array();
     let (cwtm, scales) = cwt(&timeseries, morlet_fourier, hz, steps as f64, normalize);
-    (cwtm.into_py_array(), scales.into_py_array())
+    (PyArray::from_array(py, &cwtm), PyArray::from_array(py, &scales))
 }
 
 #[pyfunction]

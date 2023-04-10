@@ -33,7 +33,7 @@ fn gen_scales(t: f64, hz: f64, steps: f64) -> Array1<f64> {
     return scales;
 }
 
-pub fn cwt(timeseries: &Array1<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f64, steps: f64, normalize: bool) -> (Array2<Complex64>, Array1<f64>){
+pub fn cwt(timeseries: &ArrayView1<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f64, steps: f64, normalize: bool) -> (Array2<Complex64>, Arc<Array1<f64>>){
     let steps = steps as f64;
 
     let mut nrm = 0;
@@ -94,9 +94,9 @@ pub fn cwt(timeseries: &Array1<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz
         
         // spawn one thread per scale
         thread::spawn(move || {
-            let norm = f64::sqrt(2.0 * PI * scale * hz).powi(nrm) as Complex64; // 1 if normalize = false
+            let norm = Complex64::from(f64::sqrt(2.0 * PI * scale * hz).powi(nrm)); // 1 if normalize = false
             let daught_waves = angs.mapv(|w| wavelet(scale,w,2.0*PI));
-            let mut eval = norm * daught_waves * *data;
+            let mut eval: Array1<Complex64> = norm * daught_waves * data.view();
             //let mut scratch = Vec::with_capacity(ifft.get_outofplace_scratch_len());
 
             //ifft.process_outofplace_with_scratch(&mut eval,&mut cwtm[i],&mut scratch);
@@ -105,16 +105,17 @@ pub fn cwt(timeseries: &Array1<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz
             } else {
                 println!("IFFT ERROR"); //TODO handle
             }
-            txi.send((i,eval.slice(s![..n0]))).unwrap();
+            txi.send((i,eval.slice_move(s![..n0]))).unwrap();
         });
     }
 
     drop(tx); // stop listening
 
-    for (i,cwtrow) in rx {
-        let mut cwtrowi = cwtm.row(i);
+    for (i, mut cwtrow) in rx {
+        let mut cwtrowi = cwtm.row_mut(i);
         cwtrowi.assign(&mut cwtrow);
     }
+
     return (cwtm, scales)
 }
 
