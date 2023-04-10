@@ -10,6 +10,5 @@ fn main() {
                             .map(|t| chirp(*t,1.0,10000.0,7000.0))
                             .collect();
     
-    cwt(&f, morlet_fourier, hz, 4.0, false);
 }
 
