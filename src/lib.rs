@@ -38,10 +38,17 @@ fn cwt_morlet_ext_py<'py>(py: Python<'py>, timeseries: &PyArray1<f64>, hz: f64, 
 
 #[pyfunction]
 #[pyo3(name = "icwt_morlet")]
-//fn icwt_morlet_py<'py>(py: Python<'py>, cwtm: &PyArray2<Complex64>, scales: &PyArray1<f64>, times: &PyArray1<f64>) -> Vec<f64> {
-fn icwt_morlet_py(cwtm: Vec<Vec<Complex64>>, scales: Vec<f64>, times: Vec<f64>) -> Vec<f64> {
+fn icwt_morlet_py<'py>(py: Python<'py>, cwtm: &PyArray2<Complex64>, scales: &PyArray1<f64>, times: &PyArray1<f64>) -> &'py PyArray1<f64> {
+    let cwtm_ro = cwtm.readonly();
+    let scales_ro = scales.readonly();
+    let times_ro = times.readonly();
 
-    icwt_morlet(&cwtm, &scales, &times)
+    PyArray::from_array(py,
+        &icwt_morlet(&cwtm_ro.as_array(),
+                    &scales_ro.as_array(),
+                    &times_ro.as_array()
+        )
+    )
 } 
 
 #[pyfunction]

@@ -119,38 +119,18 @@ pub fn cwt(timeseries: &ArrayView1<f64>, wavelet: fn(f64, f64, f64) -> Complex64
     return (cwtm, scales)
 }
 
-/*
-pub fn icwt_morlet(cwtm: &ArrayView2<Complex64>>, scales: &ArrayView1<f64>,times: &ArrayView1<f64>) -> Array1<f64> {
+pub fn icwt_morlet(cwtm: &ArrayView2<Complex64>, scales: &ArrayView1<f64>, times: &ArrayView1<f64>) -> Array1<f64> {
     let mut diffs: Array2<Complex64> = Array::zeros((scales.len(),times.len()));
     for i in 0..scales.len() {
-        calctools::diff(&cwtm.row(i), times, &diffs.row_mut(i)); //differentiate each row
+        calctools::diff(&cwtm.row(i), times, &mut diffs.row_mut(i)); //differentiate each row
     }
     
     //recovered signal
-    let mut rec: Vec<f64> = Vec::with_capacity(times.len());
+    let mut rec: Array1<f64> = Array::zeros(times.len());
 
     for j in 0..times.len() { //integrate over each column and push the scaled result
-        let integral: Complex64 = calctools::trapz_col(&mut diffs, scales, j);
-        rec.push(PI * integral.im() / (2.0 * PI).sqrt());
-    }
-    return rec;
-
-
-}
-*/
-
-pub fn icwt_morlet(cwtm: &Vec<Vec<Complex64>>, scales: &Vec<f64>,times: &Vec<f64>) -> Vec<f64> {
-    let mut diffs = vec![vec![Complex64{ re: 0.0f64, im: 0.0f64 }; times.len()]; scales.len()];
-    for i in 0..scales.len() {
-        calctools::diff(&cwtm[i], times, &mut diffs[i]); //differentiate each row
-    }
-    
-    //recovered signal
-    let mut rec: Vec<f64> = Vec::with_capacity(times.len());
-
-    for j in 0..times.len() { //integrate over each column and push the scaled result
-        let integral: Complex64 = calctools::trapz_col(&mut diffs, scales, j);
-        rec.push(PI * integral.im() / (2.0 * PI).sqrt());
+        let integral: Complex64 = calctools::trapz_col(&diffs.view(), scales, j);
+        rec[j] = PI * integral.im() / (2.0 * PI).sqrt();
     }
     return rec;
 
@@ -158,6 +138,7 @@ pub fn icwt_morlet(cwtm: &Vec<Vec<Complex64>>, scales: &Vec<f64>,times: &Vec<f64
 }
 
 mod calctools {
+    use ndarray::prelude::*;
     use num_complex::{Complex64};
     use std::f64::consts::PI;
 
@@ -173,7 +154,7 @@ mod calctools {
         (*f - *f_prev)/(*x - *x_prev)
     }
 
-    pub fn diff(f: &[Complex64], x: &Vec<f64>, target: &mut[Complex64]){ //Complex64ODO handle mismatch lengths
+    pub fn diff(f: &ArrayView1<Complex64>, x: &ArrayView1<f64>, target: &mut ArrayViewMut1<Complex64>){ //Complex64ODO handle mismatch lengths
         for i in 0..f.len() {
             if i == 0 {
                 target[i] = forwarddiff(&f[0], &f[1], &x[0], &x[1]);
@@ -215,11 +196,11 @@ mod calctools {
     }
 
     // compute the integral over the column of a 2d array
-    pub fn trapz_col(f: &Vec<Vec<Complex64>>, x: &Vec<f64>, col: usize) -> Complex64 { //Complex64ODO handle mismatch lengths
+    pub fn trapz_col(f: &ArrayView2<Complex64>, x: &ArrayView1<f64>, col: usize) -> Complex64 { //Complex64ODO handle mismatch lengths
         let mut sum = Complex64{re: 0.0f64, im: 0.0f64}; 
-        for i in 0..f.len()-1 {
+        for i in 0..x.len()-1 {
             let h = x[i + 1] - x[i];
-            sum += h * (f[i][col] + f[i+1][col]) / 2.0;
+            sum += h * (f[[i, col]] + f[[i+1, col]]) / 2.0;
         }
         return sum;
         

@@ -24,8 +24,7 @@ def main():
     plt.pcolormesh(times,freqs, np.abs(cwtmat), cmap='viridis', shading='gouraud')
     plt.show()
 
-
-    #f_rec = np.array(rustlets.icwt_morlet(cwt_list,scales,times))
+    f_rec = rustlets.icwt_morlet(cwtmat,scales,times)
 
     plt.plot(times,samples,label="original")
     plt.plot(times,f_rec,label="recovered")
