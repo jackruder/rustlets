@@ -22,7 +22,7 @@ pub fn morlet_wavelength(omega_0: f64) -> f64 {
     4.0 * PI / (omega_0 + f64::sqrt(2.0 + omega_0.powi(2)))
 }
 
-fn gen_scales(t: f64, hz: f64, steps: f64) -> Array1<f64> {
+pub fn gen_scales(t: f64, hz: f64, steps: f64) -> Array1<f64> {
     let min_scale: f64 = 2.0 / hz; // smallest scale is twice the timestep
     let num_scales: usize = (f64::log2(t / min_scale) * steps) as usize; // log2 spacing of scales
     
@@ -33,7 +33,7 @@ fn gen_scales(t: f64, hz: f64, steps: f64) -> Array1<f64> {
     return scales;
 }
 
-pub fn cwt(timeseries: &ArrayView1<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f64, scales: &ArrayView1<f64>, normalize: bool) -> (Array2<Complex64>, Arc<Array1<f64>>){
+pub fn cwt(timeseries: &ArrayView1<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f64, scales: &ArrayView1<f64>, normalize: bool) -> Array2<Complex64>{
     let mut nrm = 0;
     if normalize { // should we normalize wavelets for equal energy?
         nrm = 1; // set normalization exponent to 1, nfac^1 = nfac
@@ -112,7 +112,7 @@ pub fn cwt(timeseries: &ArrayView1<f64>, wavelet: fn(f64, f64, f64) -> Complex64
         cwtrowi.assign(&mut cwtrow);
     }
 
-    return (cwtm, scales)
+    return cwtm
 }
 
 pub fn icwt_morlet(cwtm: &ArrayView2<Complex64>, scales: &ArrayView1<f64>, times: &ArrayView1<f64>) -> Array1<f64> {

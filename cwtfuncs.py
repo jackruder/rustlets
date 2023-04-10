@@ -13,8 +13,8 @@ def main():
     samples = samples + signal.chirp(times, f0=600, f1=1100, t1=1, method='linear') + signal.gausspulse(times,fc=700)
     #samples = samples + signal.chirp(times, f0=20000, f1=8000, t1=1, method='linear')
 
-
-    cwtmat,scales = rustlets.cwt_morlet(samples,hz,10)
+    scales = rustlets.gen_scales(length, hz, 8)
+    cwtmat = rustlets.cwt_morlet(samples,hz,scales)
 
     freqs = 1 / (scales * rustlets.morlet_wavelength(2 * np.pi))
 
