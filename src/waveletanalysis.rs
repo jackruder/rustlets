@@ -33,9 +33,7 @@ fn gen_scales(t: f64, hz: f64, steps: f64) -> Array1<f64> {
     return scales;
 }
 
-pub fn cwt(timeseries: &ArrayView1<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f64, steps: f64, normalize: bool) -> (Array2<Complex64>, Arc<Array1<f64>>){
-    let steps = steps as f64;
-
+pub fn cwt(timeseries: &ArrayView1<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f64, scales: &ArrayView1<f64>, normalize: bool) -> (Array2<Complex64>, Arc<Array1<f64>>){
     let mut nrm = 0;
     if normalize { // should we normalize wavelets for equal energy?
         nrm = 1; // set normalization exponent to 1, nfac^1 = nfac
@@ -59,9 +57,7 @@ pub fn cwt(timeseries: &ArrayView1<f64>, wavelet: fn(f64, f64, f64) -> Complex64
 
     let t = n0 as f64 / hz;
     let data = Arc::new(Array::from_vec(data));
-    let scales = Arc::new(gen_scales(t, hz, steps));
-
-    //let newscales: Vec<f64> = scales.iter().map(|s| s * rescale).collect();
+    let scales = Arc::new(scales);
 
     // generate angular frequencies for wavelet
     let mut angs: Array1<f64> = Array::zeros(n); 
