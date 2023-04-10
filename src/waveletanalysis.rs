@@ -119,6 +119,25 @@ pub fn cwt(timeseries: &ArrayView1<f64>, wavelet: fn(f64, f64, f64) -> Complex64
     return (cwtm, scales)
 }
 
+/*
+pub fn icwt_morlet(cwtm: &ArrayView2<Complex64>>, scales: &ArrayView1<f64>,times: &ArrayView1<f64>) -> Array1<f64> {
+    let mut diffs: Array2<Complex64> = Array::zeros((scales.len(),times.len()));
+    for i in 0..scales.len() {
+        calctools::diff(&cwtm.row(i), times, &diffs.row_mut(i)); //differentiate each row
+    }
+    
+    //recovered signal
+    let mut rec: Vec<f64> = Vec::with_capacity(times.len());
+
+    for j in 0..times.len() { //integrate over each column and push the scaled result
+        let integral: Complex64 = calctools::trapz_col(&mut diffs, scales, j);
+        rec.push(PI * integral.im() / (2.0 * PI).sqrt());
+    }
+    return rec;
+
+
+}
+*/
 
 pub fn icwt_morlet(cwtm: &Vec<Vec<Complex64>>, scales: &Vec<f64>,times: &Vec<f64>) -> Vec<f64> {
     let mut diffs = vec![vec![Complex64{ re: 0.0f64, im: 0.0f64 }; times.len()]; scales.len()];
