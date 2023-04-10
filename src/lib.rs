@@ -43,9 +43,12 @@ fn icwt_morlet_py<'py>(py: Python<'py>, cwtm: &PyArray2<Complex64>, scales: &PyA
     let scales_ro = scales.readonly();
     let times_ro = times.readonly();
 
-    icwt_morlet(&cwtm_ro.as_array(),
-                &scales_ro.as_array(),
-                &times.as_array())
+    PyArray::from_array(py,
+        &icwt_morlet(&cwtm_ro.as_array(),
+                    &scales_ro.as_array(),
+                    &times_ro.as_array()
+        )
+    )
 } 
 
 #[pyfunction]
