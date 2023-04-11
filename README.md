@@ -23,4 +23,4 @@ To build, run maturin develop --release
 see cwtfuncs.py
 
 ## TODO
-### Move Array types to ArcArray for cleanliness
+Move Array types to ArcArray for cleanliness
