@@ -1,6 +1,7 @@
 use std::{f64::consts::PI, sync::{mpsc, Arc}, thread};
 use num_complex::{Complex64, ComplexFloat};
 use rustfft::{self, FftPlanner};
+use ndarray::prelude::*;
 
 pub fn chirp(t_0: f64, t_1: f64, f_0: f64, f_1: f64) -> f64 {
     f64::sin(f_0 + (f_1 - f_0) * t_0 / t_1) 
@@ -21,18 +22,18 @@ pub fn morlet_wavelength(omega_0: f64) -> f64 {
     4.0 * PI / (omega_0 + f64::sqrt(2.0 + omega_0.powi(2)))
 }
 
-fn gen_scales(t: f64, hz: f64, steps: f64) -> Vec<f64> {
+fn gen_scales(t: f64, hz: f64, steps: f64) -> Array1<f64> {
     let min_scale: f64 = 2.0 / hz; // smallest scale is twice the timestep
     let num_scales: usize = (f64::log2(t / min_scale) * steps) as usize; // log2 spacing of scales
     
-    let mut scales: Vec<f64> = Vec::with_capacity(num_scales+1);
+    let mut scales: Array1<f64> = Array::zeros(num_scales+1);
     for j in 0..(num_scales+1){
-        scales.push(min_scale * f64::powf(2.0, j as f64 / steps)) // compute the scale
+        scales[j] = min_scale * f64::powf(2.0, j as f64 / steps);// compute the scale
     }
     return scales;
 }
 
-pub fn cwt(timeseries: &Vec<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f64, steps: f64, normalize: bool) -> (Vec<Vec<Complex64>>, Vec<f64>){
+pub fn cwt(timeseries: &Array1<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f64, steps: f64, normalize: bool) -> (Array2<Complex64>, Array1<f64>){
     let steps = steps as f64;
 
     let mut nrm = 0;
@@ -57,19 +58,19 @@ pub fn cwt(timeseries: &Vec<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f
     }
 
     let t = n0 as f64 / hz;
-    let data = Arc::new(data);
+    let data = Arc::new(Array::from_vec(data));
     let scales = Arc::new(gen_scales(t, hz, steps));
 
     //let newscales: Vec<f64> = scales.iter().map(|s| s * rescale).collect();
 
     // generate angular frequencies for wavelet
-    let mut angs: Vec<f64> = Vec::with_capacity(n); 
+    let mut angs: Array1<f64> = Array::zeros(n); 
     let c: f64 = 2.0 * PI / (n as f64) * hz;
     for i in 0..n {
         if i <= n/2 {
-            angs.push(c * i as f64) // pos to n/2
+            angs[i] = c * i as f64; // pos to n/2
         } else {
-            angs.push(c * (i as f64 - n as f64)) // wrap to [-n/2, -1]
+            angs[i] = c * (i as f64 - n as f64); // wrap to [-n/2, -1]
         }
     }
     let angs = Arc::new(angs);
@@ -77,7 +78,7 @@ pub fn cwt(timeseries: &Vec<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f
     let ifft = planner.plan_fft_inverse(n);
     
 
-    let mut cwtm = vec![vec![Complex64{ re: 0.0f64, im: 0.0f64 }; n0]; scales.len()]; //output
+    let mut cwtm = Array::zeros((scales.len(),n0));
     let (tx,rx) = mpsc::channel();
 
     let num_scales = scales.len();
@@ -90,31 +91,31 @@ pub fn cwt(timeseries: &Vec<f64>, wavelet: fn(f64, f64, f64) -> Complex64, hz: f
         let data = Arc::clone(&data);
         let ifft = Arc::clone(&ifft);
         
+        
         // spawn one thread per scale
         thread::spawn(move || {
-            let norm = f64::sqrt(2.0 * PI * scale * hz).powi(nrm); // 1 if normalize = false
-            
-            let mut eval = Vec::with_capacity(num_scales);
-            eval = angs.iter()
-                .zip::<Vec<Complex64>>(data.to_vec())
-                .map(|(&w, f)| f * norm * wavelet(scale,w,2.0*PI))
-                .collect();
-
+            let norm = f64::sqrt(2.0 * PI * scale * hz).powi(nrm) as Complex64; // 1 if normalize = false
+            let daught_waves = angs.mapv(|w| wavelet(scale,w,2.0*PI));
+            let mut eval = norm * daught_waves * *data;
             //let mut scratch = Vec::with_capacity(ifft.get_outofplace_scratch_len());
 
             //ifft.process_outofplace_with_scratch(&mut eval,&mut cwtm[i],&mut scratch);
-            ifft.process(&mut eval);
-            eval.truncate(n0); // return to original unpadded length
-            txi.send((i,eval)).unwrap();
+            if let Some(eval_slice) = eval.as_slice_mut(){
+                ifft.process(eval_slice);
+            } else {
+                println!("IFFT ERROR"); //TODO handle
+            }
+            txi.send((i,eval.slice(s![..n0]))).unwrap();
         });
     }
 
     drop(tx); // stop listening
 
     for (i,cwtrow) in rx {
-        cwtm[i] = cwtrow;
+        let mut cwtrowi = cwtm.row(i);
+        cwtrowi.assign(&mut cwtrow);
     }
-    return (cwtm, scales.to_vec())
+    return (cwtm, scales)
 }
 
 
